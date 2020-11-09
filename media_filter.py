@@ -19,7 +19,7 @@ class MediaFilter:
     def __init__(self):
         self.path_log = os.path.join(mw.pm.profileFolder(), "media_sync_filter.log")
         self.media_dir = os.path.join(mw.pm.profileFolder(), "collection.media")
-        self.filter_dir = os.path.join(self.media_dir, "hidden")
+        self.filter_dir = os.path.join(self.media_dir, "filtered_media")
         if not os.path.exists(self.filter_dir):
             os.mkdir(self.filter_dir)
 

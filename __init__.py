@@ -33,6 +33,37 @@ def media_file_filter(file_path):
 
   return file_path
 
+if hasattr(hooks, 'media_file_filter'):
+  hooks.media_file_filter.append(media_file_filter)
+else:
+  # Support for Anki pre-2.1.36
+  from aqt.sound import MpvManager, OnDoneCallback, SimpleProcessPlayer
+  from aqt import mediasrv
+  from anki.sound import AVTag, SoundOrVideoTag
+
+  def wrap_play(self, tag: AVTag, on_done: OnDoneCallback, _old):
+    if isinstance(tag, SoundOrVideoTag):
+      tag = SoundOrVideoTag(filename=media_file_filter(tag.filename))
+    _old(self, tag, on_done)
+
+  def wrap_redirect(path, _old):
+    (dirname, path) = _old(path)
+    path = media_file_filter(path)
+    return dirname, path
+
+  MpvManager.play = wrap(MpvManager.play, wrap_play, 'around')
+  SimpleProcessPlayer.play = wrap(SimpleProcessPlayer.play, wrap_play, 'around')
+  mediasrv._redirectWebExports = wrap(mediasrv._redirectWebExports, wrap_redirect, 'around')
+
+if hasattr(gui_hooks, 'media_check_will_start'):
+  gui_hooks.media_check_will_start.append(media_check_will_start)
+else:
+  # Support for Anki pre-2.1.36
+  from aqt.mediacheck import MediaChecker
+  
+  def wrap_check(self):
+    media_check_will_start()
+  
+  MediaChecker.check = wrap(MediaChecker.check, wrap_check, 'before')
+
 gui_hooks.sync_will_start.append(sync_will_start)
-gui_hooks.media_check_will_start.append(media_check_will_start)
-hooks.media_file_filter.append(media_file_filter)

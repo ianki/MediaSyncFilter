@@ -3,6 +3,7 @@ import datetime
 import importlib
 import os
 import shutil
+import time
 import unicodedata
 
 from anki import Collection
@@ -11,7 +12,7 @@ from aqt import mw
 
 def printf(msg):
     try:
-        print(txt.encode('utf-8'))
+        print(msg.encode('utf-8'))
     except:
         pass
 
@@ -24,6 +25,7 @@ class MediaFilter:
             os.mkdir(self.filter_dir)
 
     def move_files(self, src_path, dst_path, filenames):
+        to_check = set()
         for filename in filenames:
             try:
                 src = os.path.join(src_path, filename)
@@ -31,8 +33,25 @@ class MediaFilter:
                 if os.path.isfile(src):
                     #printf("move %s to %s" % (src, dst))
                     shutil.move(src, dst)
+                    to_check.add(dst)
             except:
                 pass
+
+        # Check that file moves completed
+        for t in range(0, 10):
+            if len(to_check) == 0:
+                break
+            printf(" ... waiting for file sync #%d of %d files" % (t, len(to_check)))
+            if t != 0:
+                time.sleep(1)
+
+            remaining_to_check = set()
+            while to_check:
+                filename = to_check.pop()
+                if not os.path.isfile(filename):
+                    remaining_to_check.add(filename)
+
+            to_check = remaining_to_check
 
     def on_sync(self, col):
         printf('MediaFilter.on_sync')
